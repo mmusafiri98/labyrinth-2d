@@ -5,9 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <title>labyrinthe 2d </title>
+    <title>Labyrinthe 2D GAME </title>
     <style>
-        /* Styles CSS */
         body {
             display: flex;
             flex-direction: column;
@@ -23,32 +22,23 @@
         canvas {
             background: black;
             border: 2px solid white;
-
         }
 
         h1 {
             text-align: center;
         }
 
+        #keyboard button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         #start {
             background: red;
             color: white;
-        }
-
-        #left #right,
-        #up,
-        #down {
-            background: gray;
-            color: white;
-        }
-
-        #Pause {
-            animation: blink 0.7s steps(2, pause) infinite;
-            background: rgb(137, 137, 185);
-            border-radius: 2px;
-            color: white;
-            cursor: pointer;
-            font-size: 28px;
         }
 
         #Restart {
@@ -61,37 +51,38 @@
 <body>
 
     <div>
-        <h1>labyrinthe game</h1>
+        <h1>Labyrinthe Game</h1>
         <canvas id="grid" width="600" height="400"></canvas>
-    </div>
-    <div id="keyboard">
-        <button id="start">Start</button>
-        <button id="Restart">Restart</button>
-        <button id="Pause">Pause</button>
-        <button id="up"><span class="material-icons">arrow_upward</span></button>
-        <button id="down"><span class="material-icons">arrow_downward</span></button>
-        <button id="right"><span class="material-icons">arrow_rightward</span></button>
-        <button id="left"><span class="material-icons">arrow_leftward</span></button>
+        <div id="keyboard">
+            <button id="start">Start</button>
+            <button id="Restart">Restart</button>
+        </div>
     </div>
     <script>
         const canvas = document.getElementById("grid");
         const ctx = canvas.getContext("2d");
 
-        // Parametri della griglia
-        const cellSize = 20; // Dimensione di ogni cella
+        // Paramètres de la grille
+        const cellSize = 20;
         const cols = Math.floor(canvas.width / cellSize);
         const rows = Math.floor(canvas.height / cellSize);
 
-        // Array per il labirinto
+        // Grille du labyrinthe
         const grid = [];
         let stack = [];
 
-        // Cella del labirinto
+        // Position du joueur
+        let player = { x: 0, y: 0 };
+
+        // Position de la sortie
+        const exit = { x: cols - 1, y: rows - 1 };
+
+        // Classe Cellule
         class Cell {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.walls = [true, true, true, true]; // [top, right, bottom, left]
+                this.walls = [true, true, true, true]; // [haut, droite, bas, gauche]
                 this.visited = false;
             }
 
@@ -102,13 +93,11 @@
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 2;
 
-                // Disegna i muri
-                if (this.walls[0]) drawLine(x, y, x + cellSize, y); // Top
-                if (this.walls[1]) drawLine(x + cellSize, y, x + cellSize, y + cellSize); // Right
-                if (this.walls[2]) drawLine(x, y + cellSize, x + cellSize, y + cellSize); // Bottom
-                if (this.walls[3]) drawLine(x, y, x, y + cellSize); // Left
+                if (this.walls[0]) drawLine(x, y, x + cellSize, y); // Haut
+                if (this.walls[1]) drawLine(x + cellSize, y, x + cellSize, y + cellSize); // Droite
+                if (this.walls[2]) drawLine(x, y + cellSize, x + cellSize, y + cellSize); // Bas
+                if (this.walls[3]) drawLine(x, y, x, y + cellSize); // Gauche
 
-                // Colora la cella se visitata
                 if (this.visited) {
                     ctx.fillStyle = "black";
                     ctx.fillRect(x, y, cellSize, cellSize);
@@ -116,7 +105,7 @@
             }
         }
 
-        // Disegna una linea
+        // Fonction pour dessiner une ligne
         function drawLine(x1, y1, x2, y2) {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
@@ -124,27 +113,27 @@
             ctx.stroke();
         }
 
-        // Inizializza la griglia
+        // Initialisation de la grille
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
                 grid.push(new Cell(x, y));
             }
         }
 
-        // Ottieni l'indice di una cella
+        // Obtenir l'index d'une cellule
         function index(x, y) {
             if (x < 0 || y < 0 || x >= cols || y >= rows) return -1;
             return x + y * cols;
         }
 
-        // Ottieni un vicino non visitato
+        // Obtenir un voisin non visité
         function getUnvisitedNeighbor(cell) {
             const neighbors = [];
             const directions = [
-                [0, -1, 0], // Top
-                [1, 0, 1],  // Right
-                [0, 1, 2],  // Bottom
-                [-1, 0, 3]  // Left
+                [0, -1, 0], // Haut
+                [1, 0, 1],  // Droite
+                [0, 1, 2],  // Bas
+                [-1, 0, 3]  // Gauche
             ];
 
             for (const [dx, dy, wall] of directions) {
@@ -158,48 +147,144 @@
             return neighbors[Math.floor(Math.random() * neighbors.length)];
         }
 
-        // Rimuove i muri tra due celle
+        // Supprimer les murs entre deux cellules
         function removeWalls(cellA, cellB, wall) {
             cellA.walls[wall] = false;
-            cellB.walls[(wall + 2) % 4] = false; // Opposto del muro
+            cellB.walls[(wall + 2) % 4] = false;
         }
 
-        // Genera il labirinto
+        // Générer le labyrinthe
         function generateMaze() {
-            const start = grid[0]; // Partenza
+            const start = grid[0];
             start.visited = true;
             stack.push(start);
 
-            function step() {
-                if (stack.length > 0) {
-                    const current = stack[stack.length - 1];
-                    const next = getUnvisitedNeighbor(current);
+            while (stack.length > 0) {
+                const current = stack[stack.length - 1];
+                const next = getUnvisitedNeighbor(current);
 
-                    if (next) {
-                        next.neighbor.visited = true;
-                        removeWalls(current, next.neighbor, next.wall);
-                        stack.push(next.neighbor);
-                    } else {
-                        stack.pop();
-                    }
-
-                    drawGrid();
-                    requestAnimationFrame(step);
+                if (next) {
+                    next.neighbor.visited = true;
+                    removeWalls(current, next.neighbor, next.wall);
+                    stack.push(next.neighbor);
+                } else {
+                    stack.pop();
                 }
+            }
+        }
+
+        // Construire le graphe
+        function buildGraph(grid, cols, rows) {
+            const graph = {};
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const index = y * cols + x;
+                    graph[index] = [];
+
+                    const cell = grid[index];
+
+                    if (!cell.walls[0] && y > 0) graph[index].push((y - 1) * cols + x); // Haut
+                    if (!cell.walls[1] && x < cols - 1) graph[index].push(y * cols + (x + 1)); // Droite
+                    if (!cell.walls[2] && y < rows - 1) graph[index].push((y + 1) * cols + x); // Bas
+                    if (!cell.walls[3] && x > 0) graph[index].push(y * cols + (x - 1)); // Gauche
+                }
+            }
+            return graph;
+        }
+
+        // DFS pour trouver un chemin vers la sortie
+        function findPathDFS(graph, start, target) {
+            const stack = [[start]];
+            const visited = new Set();
+
+            while (stack.length > 0) {
+                const path = stack.pop();
+                const current = path[path.length - 1];
+
+                if (visited.has(current)) continue;
+                visited.add(current);
+
+                if (current === target) return path;
+
+                for (const neighbor of graph[current]) {
+                    if (!visited.has(neighbor)) {
+                        stack.push([...path, neighbor]);
+                    }
+                }
+            }
+            return null; // Aucun chemin trouvé
+        }
+
+        // Déplacer automatiquement le personnage
+        function animatePath(path, cols, cellSize) {
+            let index = 0;
+
+            function step() {
+                if (index >= path.length) {
+                    alert("Félicitations ! Le personnage a atteint la sortie !");
+                    return;
+                }
+
+                const currentCell = path[index];
+                player.x = currentCell % cols;
+                player.y = Math.floor(currentCell / cols);
+                drawGrid();
+                index++;
+
+                setTimeout(step, 300); // Intervalle entre chaque mouvement
             }
 
             step();
         }
 
-        // Disegna l'intera griglia
+        // Dessiner la grille complète
         function drawGrid() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             grid.forEach(cell => cell.draw());
+
+            const playerSize = cellSize * 1.5; // Aumentare la dimensione del giocatore
+            const playerRadius = playerSize / 2; // Raggio del cerchio (metà della dimensione)
+
+            // Dessiner le joueur (giocatore)
+            ctx.fillStyle = "blue";
+            ctx.beginPath();
+            ctx.arc(player.x * cellSize + cellSize / 2, player.y * cellSize + cellSize / 2, playerRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Modifica per ingrandire l'uscita
+            const exitSize = cellSize * 1.4; // Aumenta la dimensione dell'uscita (ad esempio 1.5 volte la cella)
+            ctx.fillStyle = "green";
+            ctx.fillRect(exit.x * cellSize + (cellSize - exitSize) / 2, exit.y * cellSize + (cellSize - exitSize) / 2, exitSize, exitSize);
         }
 
-        // Avvia il generatore
-        generateMaze();
-    </script>
+        // Réinitialiser le jeu
+        function resetGame() {
+            player = { x: 0, y: 0 };
+            generateMaze();
+            drawGrid();
+        }
 
+        // Générer et afficher le labyrinthe
+        generateMaze();
+        const graph = buildGraph(grid, cols, rows);
+        drawGrid();
+
+        // Ajouter un événement pour démarrer le déplacement avec DFS
+        document.getElementById("start").addEventListener("click", () => {
+            const startIndex = 0; // Position initiale (0,0)
+            const targetIndex = exit.y * cols + exit.x; // Position de la sortie
+
+            const path = findPathDFS(graph, startIndex, targetIndex);
+            if (path) {
+                animatePath(path, cols, cellSize);
+            } else {
+                alert("Aucun chemin trouvé !");
+            }
+        });
+
+        // Réinitialiser le jeu
+        document.getElementById("Restart").addEventListener("click", resetGame);
+    </script>
+</body>
 
 </html>
