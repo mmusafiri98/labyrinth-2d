@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>labyrinthe 2d </title>
+    <style>
+        /* Styles CSS */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            background: black;
+            border: 2px solid white;
+
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #start {
+            background: red;
+            color: white;
+        }
+
+        #left #right,
+        #up,
+        #down {
+            background: gray;
+            color: white;
+        }
+
+        #Pause {
+            animation: blink 0.7s steps(2, pause) infinite;
+            background: rgb(137, 137, 185);
+            border-radius: 2px;
+            color: white;
+            cursor: pointer;
+            font-size: 28px;
+        }
+
+        #Restart {
+            background: greenyellow;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div>
+        <h1>labyrinthe game</h1>
+        <canvas id="grid" width="600" height="400"></canvas>
+    </div>
+    <div id="keyboard">
+        <button id="start">Start</button>
+        <button id="Restart">Restart</button>
+        <button id="Pause">Pause</button>
+        <button id="up"><span class="material-icons">arrow_upward</span></button>
+        <button id="down"><span class="material-icons">arrow_downward</span></button>
+        <button id="right"><span class="material-icons">arrow_rightward</span></button>
+        <button id="left"><span class="material-icons">arrow_leftward</span></button>
+    </div>
+    <script>
+        const canvas = document.getElementById("grid");
+        const ctx = canvas.getContext("2d");
+
+        // Parametri della griglia
+        const cellSize = 20; // Dimensione di ogni cella
+        const cols = Math.floor(canvas.width / cellSize);
+        const rows = Math.floor(canvas.height / cellSize);
+
+        // Array per il labirinto
+        const grid = [];
+        let stack = [];
+
+        // Cella del labirinto
+        class Cell {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.walls = [true, true, true, true]; // [top, right, bottom, left]
+                this.visited = false;
+            }
+
+            draw() {
+                const x = this.x * cellSize;
+                const y = this.y * cellSize;
+
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+
+                // Disegna i muri
+                if (this.walls[0]) drawLine(x, y, x + cellSize, y); // Top
+                if (this.walls[1]) drawLine(x + cellSize, y, x + cellSize, y + cellSize); // Right
+                if (this.walls[2]) drawLine(x, y + cellSize, x + cellSize, y + cellSize); // Bottom
+                if (this.walls[3]) drawLine(x, y, x, y + cellSize); // Left
+
+                // Colora la cella se visitata
+                if (this.visited) {
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                }
+            }
+        }
+
+        // Disegna una linea
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        // Inizializza la griglia
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                grid.push(new Cell(x, y));
+            }
+        }
+
+        // Ottieni l'indice di una cella
+        function index(x, y) {
+            if (x < 0 || y < 0 || x >= cols || y >= rows) return -1;
+            return x + y * cols;
+        }
+
+        // Ottieni un vicino non visitato
+        function getUnvisitedNeighbor(cell) {
+            const neighbors = [];
+            const directions = [
+                [0, -1, 0], // Top
+                [1, 0, 1],  // Right
+                [0, 1, 2],  // Bottom
+                [-1, 0, 3]  // Left
+            ];
+
+            for (const [dx, dy, wall] of directions) {
+                const neighborIndex = index(cell.x + dx, cell.y + dy);
+                const neighbor = grid[neighborIndex];
+                if (neighbor && !neighbor.visited) {
+                    neighbors.push({ neighbor, wall });
+                }
+            }
+
+            return neighbors[Math.floor(Math.random() * neighbors.length)];
+        }
+
+        // Rimuove i muri tra due celle
+        function removeWalls(cellA, cellB, wall) {
+            cellA.walls[wall] = false;
+            cellB.walls[(wall + 2) % 4] = false; // Opposto del muro
+        }
+
+        // Genera il labirinto
+        function generateMaze() {
+            const start = grid[0]; // Partenza
+            start.visited = true;
+            stack.push(start);
+
+            function step() {
+                if (stack.length > 0) {
+                    const current = stack[stack.length - 1];
+                    const next = getUnvisitedNeighbor(current);
+
+                    if (next) {
+                        next.neighbor.visited = true;
+                        removeWalls(current, next.neighbor, next.wall);
+                        stack.push(next.neighbor);
+                    } else {
+                        stack.pop();
+                    }
+
+                    drawGrid();
+                    requestAnimationFrame(step);
+                }
+            }
+
+            step();
+        }
+
+        // Disegna l'intera griglia
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            grid.forEach(cell => cell.draw());
+        }
+
+        // Avvia il generatore
+        generateMaze();
+    </script>
+
+
+</html>
