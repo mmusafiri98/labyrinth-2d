@@ -52,6 +52,10 @@
 
     <div>
         <h1>Labyrinthe Game</h1>
+        <audio id="background-music" loop autoplay>
+            <source src="song18.mp3" type="audio/mp3">
+            Il tuo browser non supporta il tag audio.
+        </audio>
         <canvas id="grid" width="600" height="400"></canvas>
         <div id="keyboard">
             <button id="start">Start</button>
@@ -61,6 +65,8 @@
     <script>
         const canvas = document.getElementById("grid");
         const ctx = canvas.getContext("2d");
+         //backgroundMusic la variable est assigne a la chaine id element id backgorund-muaic 
+         const backgroundMusic = document.getElementById("background-music");
 
         // Paramètres de la grille
         const cellSize = 20;
@@ -280,6 +286,8 @@
             } else {
                 alert("Aucun chemin trouvé !");
             }
+         //pour commence le jeux 
+         backgroundMusic.play();
         });
 
         // Réinitialiser le jeu
