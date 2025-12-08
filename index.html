@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="it">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Labyrinthe 2D Responsive</title>
+    <title>Labirinto 2D Responsive</title>
 
     <style>
         body {
@@ -26,10 +26,10 @@
         canvas {
             border: 2px solid white;
             background: black;
-            width: 95vw;   /* Responsive */
+            width: 95vw;
             height: auto;
             max-width: 700px;
-            aspect-ratio: 3 / 2;   /* Maintient proportions */
+            aspect-ratio: 3 / 2;
         }
 
         #keyboard button {
@@ -38,11 +38,6 @@
             font-size: 18px;
             border-radius: 5px;
             cursor: pointer;
-        }
-
-        #start {
-            background: red;
-            color: white;
         }
 
         #Restart {
@@ -54,43 +49,35 @@
 
 <body>
 
-    <h1>Labyrinthe 2D - Responsive</h1>
-
-    <audio id="background-music" loop autoplay>
-        <source src="song18.mp3" type="audio/mp3">
-    </audio>
+    <h1>Labirinto 2D - Responsive + Movimenti</h1>
 
     <canvas id="grid"></canvas>
 
     <div id="keyboard">
-        <button id="start">Start</button>
         <button id="Restart">Restart</button>
     </div>
 
     <script>
 
-        //--------------------------------------------------------------
-        //   RESPONSIVE CANVAS — ADAPTATION À L’ÉCRAN AUTOMATIQUE
-        //--------------------------------------------------------------
+        //------------------------------------------------------------
+        //          CANVAS RESPONSIVE
+        //------------------------------------------------------------
 
         const canvas = document.getElementById("grid");
         const ctx = canvas.getContext("2d");
-        const backgroundMusic = document.getElementById("background-music");
 
         function resizeCanvas() {
             const maxWidth = Math.min(window.innerWidth * 0.95, 700);
             canvas.width = maxWidth;
-            canvas.height = maxWidth * 0.67;  // ratio 3/2
-
-            initGame(); // recrée un labyrinthe adapté
+            canvas.height = maxWidth * 0.67;
+            initGame();
         }
 
         window.addEventListener("resize", resizeCanvas);
 
-
-        //--------------------------------------------------------------
-        //                     VARIABLES DU JEU
-        //--------------------------------------------------------------
+        //------------------------------------------------------------
+        //               VARIABILI DEL GIOCO
+        //------------------------------------------------------------
 
         let cellSize;
         let cols;
@@ -98,15 +85,12 @@
 
         let grid = [];
         let stack = [];
-        let graph = {};
-
         let player = { x: 0, y: 0 };
         let exit = { x: 0, y: 0 };
 
-
-        //--------------------------------------------------------------
-        //                     CLASSE CELLULE
-        //--------------------------------------------------------------
+        //------------------------------------------------------------
+        //                   CLASSE CELLA
+        //------------------------------------------------------------
 
         class Cell {
             constructor(x, y) {
@@ -137,9 +121,9 @@
             ctx.stroke();
         }
 
-        //--------------------------------------------------------------
-        //         FONCTIONS DE GÉNÉRATION DU LABYRINTHE
-        //--------------------------------------------------------------
+        //------------------------------------------------------------
+        //           GENERAZIONE LABIRINTO
+        //------------------------------------------------------------
 
         function index(x, y) {
             if (x < 0 || y < 0 || x >= cols || y >= rows) return -1;
@@ -192,98 +176,27 @@
             }
         }
 
-        //--------------------------------------------------------------
-        //                      CONSTRUCTION GRAPHE
-        //--------------------------------------------------------------
-
-        function buildGraph() {
-            graph = {};
-
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < cols; x++) {
-
-                    const i = index(x, y);
-                    graph[i] = [];
-                    const c = grid[i];
-
-                    if (!c.walls[0] && y > 0) graph[i].push(index(x, y - 1));
-                    if (!c.walls[1] && x < cols - 1) graph[i].push(index(x + 1, y));
-                    if (!c.walls[2] && y < rows - 1) graph[i].push(index(x, y + 1));
-                    if (!c.walls[3] && x > 0) graph[i].push(index(x - 1, y));
-                }
-            }
-        }
-
-        //--------------------------------------------------------------
-        //                 PATHFINDING DFS POUR LE JEU
-        //--------------------------------------------------------------
-
-        function findPathDFS(graph, start, target) {
-            const stack = [[start]];
-            const visited = new Set();
-
-            while (stack.length > 0) {
-                const path = stack.pop();
-                const node = path[path.length - 1];
-
-                if (node === target) return path;
-                if (visited.has(node)) continue;
-                visited.add(node);
-
-                for (const neighbor of graph[node]) {
-                    stack.push([...path, neighbor]);
-                }
-            }
-            return null;
-        }
-
-        //--------------------------------------------------------------
-        //                      ANIMATION DU CHEMIN
-        //--------------------------------------------------------------
-
-        function animatePath(path) {
-            let i = 0;
-
-            function step() {
-                if (i >= path.length) {
-                    alert("🎉 Le joueur a atteint la sortie !");
-                    return;
-                }
-
-                const cellIndex = path[i];
-                player.x = cellIndex % cols;
-                player.y = Math.floor(cellIndex / cols);
-
-                drawGrid();
-                i++;
-
-                setTimeout(step, 120);
-            }
-
-            step();
-        }
-
-        //--------------------------------------------------------------
-        //                    DESSIN DE LA GRILLE
-        //--------------------------------------------------------------
+        //------------------------------------------------------------
+        //                 DISEGNO GRIGLIA
+        //------------------------------------------------------------
 
         function drawGrid() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             grid.forEach(cell => cell.draw());
 
-            // joueur agrandi
+            // Player
             ctx.fillStyle = "cyan";
             ctx.beginPath();
             ctx.arc(
                 player.x * cellSize + cellSize / 2,
                 player.y * cellSize + cellSize / 2,
-                cellSize * 0.40,
+                cellSize * 0.4,
                 0, Math.PI * 2
             );
             ctx.fill();
 
-            // sortie
+            // Exit
             ctx.fillStyle = "lime";
             ctx.fillRect(
                 exit.x * cellSize + cellSize * 0.15,
@@ -293,9 +206,42 @@
             );
         }
 
-        //--------------------------------------------------------------
-        //                  INITIALISATION DU JEU
-        //--------------------------------------------------------------
+        //------------------------------------------------------------
+        //               MOVIMENTO DEL GIOCATORE
+        //------------------------------------------------------------
+
+        function movePlayer(dx, dy, wallIndex) {
+            const i = index(player.x, player.y);
+            const cell = grid[i];
+
+            if (!cell.walls[wallIndex]) {
+                player.x += dx;
+                player.y += dy;
+            }
+
+            drawGrid();
+            checkWin();
+        }
+
+        function checkWin() {
+            if (player.x === exit.x && player.y === exit.y) {
+                alert("🎉 Hai completato il labirinto!");
+                initGame();
+            }
+        }
+
+        document.addEventListener("keydown", (e) => {
+            const key = e.key.toLowerCase();
+
+            if (key === "arrowup" || key === "w") movePlayer(0, -1, 0);
+            if (key === "arrowright" || key === "d") movePlayer(1, 0, 1);
+            if (key === "arrowdown" || key === "s") movePlayer(0, 1, 2);
+            if (key === "arrowleft" || key === "a") movePlayer(-1, 0, 3);
+        });
+
+        //------------------------------------------------------------
+        //                INIZIALIZZAZIONE
+        //------------------------------------------------------------
 
         function initGame() {
 
@@ -310,40 +256,17 @@
                 }
             }
 
-            exit = { x: cols - 1, y: rows - 1 };
             player = { x: 0, y: 0 };
+            exit = { x: cols - 1, y: rows - 1 };
 
             generateMaze();
-            buildGraph();
             drawGrid();
         }
 
-        //--------------------------------------------------------------
-        //                       BOUTONS UI
-        //--------------------------------------------------------------
-
-        document.getElementById("start").addEventListener("click", () => {
-            const startIndex = 0;
-            const targetIndex = index(exit.x, exit.y);
-
-            const path = findPathDFS(graph, startIndex, targetIndex);
-            if (path) animatePath(path);
-
-            backgroundMusic.play();
-        });
-
-        document.getElementById("Restart").addEventListener("click", () => {
-            initGame();
-        });
-
-        //--------------------------------------------------------------
-        //           LANCEMENT INITIAL (responsive dès début)
-        //--------------------------------------------------------------
+        document.getElementById("Restart").addEventListener("click", initGame);
 
         resizeCanvas();
 
     </script>
-
 </body>
-
 </html>
