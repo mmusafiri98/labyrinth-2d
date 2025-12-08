@@ -17,7 +17,6 @@
             background: black;
             color: white;
             font-family: Arial, sans-serif;
-            overflow: hidden;
         }
 
         h1 {
@@ -33,76 +32,61 @@
             aspect-ratio: 3 / 2;
         }
 
-        #controls {
-            margin-top: 10px;
+        #keyboard {
             display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 18px;
-            border-radius: 6px;
-            cursor: pointer;
-            border: none;
-        }
-
-        #Start { background: dodgerblue; color: white; }
-        #Pause { background: orange; color: black; }
-        #Restart { background: lime; color: black; }
-
-        /* Tasti direzionali */
-        #arrows {
+            flex-direction: column;
+            align-items: center;
             margin-top: 15px;
-            display: grid;
-            grid-template-columns: 80px 80px 80px;
-            gap: 10px;
+        }
+
+        #keyboard .row {
+            display: flex;
             justify-content: center;
         }
 
-        .arrow-btn {
-            width: 80px;
-            height: 80px;
-            font-size: 30px;
+        #keyboard button {
+            margin: 8px;
+            padding: 15px 20px;
+            font-size: 20px;
             border-radius: 10px;
-            background: gray;
-            color: white;
+            cursor: pointer;
+            border: none;
+            background: white;
+            color: black;
+            font-weight: bold;
+        }
+
+        #Restart {
+            background: greenyellow;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Labirinto 2D</h1>
+    <h1>Labirinto 2D - Responsive + Movimenti</h1>
 
     <canvas id="grid"></canvas>
 
-    <!-- Pulsanti principali -->
-    <div id="controls">
-        <button id="Start">Start</button>
-        <button id="Pause">Pause</button>
+    <!-- BOTTONI DI MOVIMENTO -->
+    <div id="keyboard">
         <button id="Restart">Restart</button>
-    </div>
 
-    <!-- Pulsanti direzionali per mobile -->
-    <div id="arrows">
-        <div></div>
-        <button class="arrow-btn" id="Up">↑</button>
-        <div></div>
+        <div class="row">
+            <button id="up">▲</button>
+        </div>
 
-        <button class="arrow-btn" id="Left">←</button>
-        <div></div>
-        <button class="arrow-btn" id="Right">→</button>
-
-        <div></div>
-        <button class="arrow-btn" id="Down">↓</button>
-        <div></div>
+        <div class="row">
+            <button id="left">◀</button>
+            <button id="down">▼</button>
+            <button id="right">▶</button>
+        </div>
     </div>
 
     <script>
 
         //------------------------------------------------------------
-        //                       RESPONSIVE CANVAS
+        //          CANVAS RESPONSIVE
         //------------------------------------------------------------
 
         const canvas = document.getElementById("grid");
@@ -112,26 +96,26 @@
             const maxWidth = Math.min(window.innerWidth * 0.95, 700);
             canvas.width = maxWidth;
             canvas.height = maxWidth * 0.67;
-            if (gameStarted) initGame();
+            initGame();
         }
 
         window.addEventListener("resize", resizeCanvas);
 
         //------------------------------------------------------------
-        //                VARIABILI DEL GIOCO
+        //               VARIABILI DEL GIOCO
         //------------------------------------------------------------
 
-        let cellSize, cols, rows;
+        let cellSize;
+        let cols;
+        let rows;
+
         let grid = [];
         let stack = [];
         let player = { x: 0, y: 0 };
         let exit = { x: 0, y: 0 };
 
-        let paused = false;
-        let gameStarted = false;
-
         //------------------------------------------------------------
-        //                  CLASSE CELLA
+        //                   CLASSE CELLA
         //------------------------------------------------------------
 
         class Cell {
@@ -164,7 +148,7 @@
         }
 
         //------------------------------------------------------------
-        //             GENERAZIONE LABIRINTO
+        //           GENERAZIONE LABIRINTO
         //------------------------------------------------------------
 
         function index(x, y) {
@@ -182,9 +166,11 @@
             ];
 
             for (const [dx, dy, wall] of options) {
-                const ni = index(cell.x + dx, cell.y + dy);
-                const n = grid[ni];
-                if (n && !n.visited) neighbors.push({ neighbor: n, wall });
+                const neighborIndex = index(cell.x + dx, cell.y + dy);
+                const neighbor = grid[neighborIndex];
+                if (neighbor && !neighbor.visited) {
+                    neighbors.push({ neighbor, wall });
+                }
             }
 
             if (neighbors.length === 0) return null;
@@ -217,7 +203,7 @@
         }
 
         //------------------------------------------------------------
-        //                    DISEGNO GRIGLIA
+        //                 DISEGNO GRIGLIA
         //------------------------------------------------------------
 
         function drawGrid() {
@@ -247,12 +233,10 @@
         }
 
         //------------------------------------------------------------
-        //            MOVIMENTO DEL GIOCATORE
+        //               MOVIMENTO DEL GIOCATORE
         //------------------------------------------------------------
 
-        function move(dx, dy, wallIndex) {
-            if (!gameStarted || paused) return;
-
+        function movePlayer(dx, dy, wallIndex) {
             const i = index(player.x, player.y);
             const cell = grid[i];
 
@@ -267,52 +251,32 @@
 
         function checkWin() {
             if (player.x === exit.x && player.y === exit.y) {
-                alert("🎉 Labirinto completato!");
-                gameStarted = false;
+                alert("🎉 Hai completato il labirinto!");
+                initGame();
             }
         }
 
         // Tastiera
         document.addEventListener("keydown", (e) => {
-            if (!gameStarted || paused) return;
+            const key = e.key.toLowerCase();
 
-            const k = e.key.toLowerCase();
-
-            if (k === "arrowup" || k === "w") move(0, -1, 0);
-            if (k === "arrowright" || k === "d") move(1, 0, 1);
-            if (k === "arrowdown" || k === "s") move(0, 1, 2);
-            if (k === "arrowleft" || k === "a") move(-1, 0, 3);
+            if (key === "arrowup" || key === "w") movePlayer(0, -1, 0);
+            if (key === "arrowright" || key === "d") movePlayer(1, 0, 1);
+            if (key === "arrowdown" || key === "s") movePlayer(0, 1, 2);
+            if (key === "arrowleft" || key === "a") movePlayer(-1, 0, 3);
         });
 
-        // BOTTONI DIREZIONALI
-        document.getElementById("Up").onclick = () => move(0, -1, 0);
-        document.getElementById("Right").onclick = () => move(1, 0, 1);
-        document.getElementById("Down").onclick = () => move(0, 1, 2);
-        document.getElementById("Left").onclick = () => move(-1, 0, 3);
-
         //------------------------------------------------------------
-        //                  START - PAUSE - RESTART
+        //         BOTTONI DI MOVIMENTO (MOBILE / TABLET)
         //------------------------------------------------------------
 
-        document.getElementById("Start").onclick = () => {
-            gameStarted = true;
-            paused = false;
-            initGame();
-        };
-
-        document.getElementById("Pause").onclick = () => {
-            paused = !paused;
-            document.getElementById("Pause").innerText = paused ? "Resume" : "Pause";
-        };
-
-        document.getElementById("Restart").onclick = () => {
-            gameStarted = true;
-            paused = false;
-            initGame();
-        };
+        document.getElementById("up").onclick = () => movePlayer(0, -1, 0);
+        document.getElementById("right").onclick = () => movePlayer(1, 0, 1);
+        document.getElementById("down").onclick = () => movePlayer(0, 1, 2);
+        document.getElementById("left").onclick = () => movePlayer(-1, 0, 3);
 
         //------------------------------------------------------------
-        //                 INIZIALIZZAZIONE COMPLETA
+        //                INIZIALIZZAZIONE
         //------------------------------------------------------------
 
         function initGame() {
@@ -335,9 +299,12 @@
             drawGrid();
         }
 
+        document.getElementById("Restart").addEventListener("click", initGame);
+
         resizeCanvas();
 
     </script>
 </body>
 </html>
+
 
