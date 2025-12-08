@@ -1,37 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <title>Labyrinthe 2D GAME </title>
+    <title>Labyrinthe 2D Responsive</title>
+
     <style>
         body {
+            margin: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
-            background-color: black;
+            background: black;
             color: white;
             font-family: Arial, sans-serif;
-        }
-
-        canvas {
-            background: black;
-            border: 2px solid white;
         }
 
         h1 {
             text-align: center;
         }
 
+        canvas {
+            border: 2px solid white;
+            background: black;
+            width: 95vw;   /* Responsive */
+            height: auto;
+            max-width: 700px;
+            aspect-ratio: 3 / 2;   /* Maintient proportions */
+        }
+
         #keyboard button {
             margin: 10px;
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 18px;
             border-radius: 5px;
             cursor: pointer;
         }
@@ -50,45 +54,65 @@
 
 <body>
 
-    <div>
-        <h1>Labyrinthe Game</h1>
-        <audio id="background-music" loop autoplay>
-            <source src="song18.mp3" type="audio/mp3">
-            Il tuo browser non supporta il tag audio.
-        </audio>
-        <canvas id="grid" width="600" height="400"></canvas>
-        <div id="keyboard">
-            <button id="start">Start</button>
-            <button id="Restart">Restart</button>
-        </div>
+    <h1>Labyrinthe 2D - Responsive</h1>
+
+    <audio id="background-music" loop autoplay>
+        <source src="song18.mp3" type="audio/mp3">
+    </audio>
+
+    <canvas id="grid"></canvas>
+
+    <div id="keyboard">
+        <button id="start">Start</button>
+        <button id="Restart">Restart</button>
     </div>
+
     <script>
+
+        //--------------------------------------------------------------
+        //   RESPONSIVE CANVAS — ADAPTATION À L’ÉCRAN AUTOMATIQUE
+        //--------------------------------------------------------------
+
         const canvas = document.getElementById("grid");
         const ctx = canvas.getContext("2d");
-         //backgroundMusic la variable est assigne a la chaine id element id backgorund-muaic 
-         const backgroundMusic = document.getElementById("background-music");
+        const backgroundMusic = document.getElementById("background-music");
 
-        // Paramètres de la grille
-        const cellSize = 20;
-        const cols = Math.floor(canvas.width / cellSize);
-        const rows = Math.floor(canvas.height / cellSize);
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth * 0.95, 700);
+            canvas.width = maxWidth;
+            canvas.height = maxWidth * 0.67;  // ratio 3/2
 
-        // Grille du labyrinthe
-        const grid = [];
+            initGame(); // recrée un labyrinthe adapté
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+
+
+        //--------------------------------------------------------------
+        //                     VARIABLES DU JEU
+        //--------------------------------------------------------------
+
+        let cellSize;
+        let cols;
+        let rows;
+
+        let grid = [];
         let stack = [];
+        let graph = {};
 
-        // Position du joueur
         let player = { x: 0, y: 0 };
+        let exit = { x: 0, y: 0 };
 
-        // Position de la sortie
-        const exit = { x: cols - 1, y: rows - 1 };
 
-        // Classe Cellule
+        //--------------------------------------------------------------
+        //                     CLASSE CELLULE
+        //--------------------------------------------------------------
+
         class Cell {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.walls = [true, true, true, true]; // [haut, droite, bas, gauche]
+                this.walls = [true, true, true, true];
                 this.visited = false;
             }
 
@@ -99,19 +123,13 @@
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 2;
 
-                if (this.walls[0]) drawLine(x, y, x + cellSize, y); // Haut
-                if (this.walls[1]) drawLine(x + cellSize, y, x + cellSize, y + cellSize); // Droite
-                if (this.walls[2]) drawLine(x, y + cellSize, x + cellSize, y + cellSize); // Bas
-                if (this.walls[3]) drawLine(x, y, x, y + cellSize); // Gauche
-
-                if (this.visited) {
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(x, y, cellSize, cellSize);
-                }
+                if (this.walls[0]) drawLine(x, y, x + cellSize, y);
+                if (this.walls[1]) drawLine(x + cellSize, y, x + cellSize, y + cellSize);
+                if (this.walls[2]) drawLine(x, y + cellSize, x + cellSize, y + cellSize);
+                if (this.walls[3]) drawLine(x, y, x, y + cellSize);
             }
         }
 
-        // Fonction pour dessiner une ligne
         function drawLine(x1, y1, x2, y2) {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
@@ -119,30 +137,25 @@
             ctx.stroke();
         }
 
-        // Initialisation de la grille
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
-                grid.push(new Cell(x, y));
-            }
-        }
+        //--------------------------------------------------------------
+        //         FONCTIONS DE GÉNÉRATION DU LABYRINTHE
+        //--------------------------------------------------------------
 
-        // Obtenir l'index d'une cellule
         function index(x, y) {
             if (x < 0 || y < 0 || x >= cols || y >= rows) return -1;
             return x + y * cols;
         }
 
-        // Obtenir un voisin non visité
         function getUnvisitedNeighbor(cell) {
             const neighbors = [];
-            const directions = [
-                [0, -1, 0], // Haut
-                [1, 0, 1],  // Droite
-                [0, 1, 2],  // Bas
-                [-1, 0, 3]  // Gauche
+            const options = [
+                [0, -1, 0],
+                [1, 0, 1],
+                [0, 1, 2],
+                [-1, 0, 3]
             ];
 
-            for (const [dx, dy, wall] of directions) {
+            for (const [dx, dy, wall] of options) {
                 const neighborIndex = index(cell.x + dx, cell.y + dy);
                 const neighbor = grid[neighborIndex];
                 if (neighbor && !neighbor.visited) {
@@ -150,17 +163,17 @@
                 }
             }
 
+            if (neighbors.length === 0) return null;
             return neighbors[Math.floor(Math.random() * neighbors.length)];
         }
 
-        // Supprimer les murs entre deux cellules
-        function removeWalls(cellA, cellB, wall) {
-            cellA.walls[wall] = false;
-            cellB.walls[(wall + 2) % 4] = false;
+        function removeWalls(a, b, wall) {
+            a.walls[wall] = false;
+            b.walls[(wall + 2) % 4] = false;
         }
 
-        // Générer le labyrinthe
         function generateMaze() {
+            stack = [];
             const start = grid[0];
             start.visited = true;
             stack.push(start);
@@ -179,120 +192,158 @@
             }
         }
 
-        // Construire le graphe
-        function buildGraph(grid, cols, rows) {
-            const graph = {};
+        //--------------------------------------------------------------
+        //                      CONSTRUCTION GRAPHE
+        //--------------------------------------------------------------
+
+        function buildGraph() {
+            graph = {};
+
             for (let y = 0; y < rows; y++) {
                 for (let x = 0; x < cols; x++) {
-                    const index = y * cols + x;
-                    graph[index] = [];
 
-                    const cell = grid[index];
+                    const i = index(x, y);
+                    graph[i] = [];
+                    const c = grid[i];
 
-                    if (!cell.walls[0] && y > 0) graph[index].push((y - 1) * cols + x); // Haut
-                    if (!cell.walls[1] && x < cols - 1) graph[index].push(y * cols + (x + 1)); // Droite
-                    if (!cell.walls[2] && y < rows - 1) graph[index].push((y + 1) * cols + x); // Bas
-                    if (!cell.walls[3] && x > 0) graph[index].push(y * cols + (x - 1)); // Gauche
+                    if (!c.walls[0] && y > 0) graph[i].push(index(x, y - 1));
+                    if (!c.walls[1] && x < cols - 1) graph[i].push(index(x + 1, y));
+                    if (!c.walls[2] && y < rows - 1) graph[i].push(index(x, y + 1));
+                    if (!c.walls[3] && x > 0) graph[i].push(index(x - 1, y));
                 }
             }
-            return graph;
         }
 
-        // DFS pour trouver un chemin vers la sortie
+        //--------------------------------------------------------------
+        //                 PATHFINDING DFS POUR LE JEU
+        //--------------------------------------------------------------
+
         function findPathDFS(graph, start, target) {
             const stack = [[start]];
             const visited = new Set();
 
             while (stack.length > 0) {
                 const path = stack.pop();
-                const current = path[path.length - 1];
+                const node = path[path.length - 1];
 
-                if (visited.has(current)) continue;
-                visited.add(current);
+                if (node === target) return path;
+                if (visited.has(node)) continue;
+                visited.add(node);
 
-                if (current === target) return path;
-
-                for (const neighbor of graph[current]) {
-                    if (!visited.has(neighbor)) {
-                        stack.push([...path, neighbor]);
-                    }
+                for (const neighbor of graph[node]) {
+                    stack.push([...path, neighbor]);
                 }
             }
-            return null; // Aucun chemin trouvé
+            return null;
         }
 
-        // Déplacer automatiquement le personnage
-        function animatePath(path, cols, cellSize) {
-            let index = 0;
+        //--------------------------------------------------------------
+        //                      ANIMATION DU CHEMIN
+        //--------------------------------------------------------------
+
+        function animatePath(path) {
+            let i = 0;
 
             function step() {
-                if (index >= path.length) {
-                    alert("Félicitations ! Le personnage a atteint la sortie !");
+                if (i >= path.length) {
+                    alert("🎉 Le joueur a atteint la sortie !");
                     return;
                 }
 
-                const currentCell = path[index];
-                player.x = currentCell % cols;
-                player.y = Math.floor(currentCell / cols);
-                drawGrid();
-                index++;
+                const cellIndex = path[i];
+                player.x = cellIndex % cols;
+                player.y = Math.floor(cellIndex / cols);
 
-                setTimeout(step, 300); // Intervalle entre chaque mouvement
+                drawGrid();
+                i++;
+
+                setTimeout(step, 120);
             }
 
             step();
         }
 
-        // Dessiner la grille complète
+        //--------------------------------------------------------------
+        //                    DESSIN DE LA GRILLE
+        //--------------------------------------------------------------
+
         function drawGrid() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             grid.forEach(cell => cell.draw());
 
-            const playerSize = cellSize * 1.5; // Aumentare la dimensione del giocatore
-            const playerRadius = playerSize / 2; // Raggio del cerchio (metà della dimensione)
-
-            // Dessiner le joueur (giocatore)
-            ctx.fillStyle = "blue";
+            // joueur agrandi
+            ctx.fillStyle = "cyan";
             ctx.beginPath();
-            ctx.arc(player.x * cellSize + cellSize / 2, player.y * cellSize + cellSize / 2, playerRadius, 0, Math.PI * 2);
+            ctx.arc(
+                player.x * cellSize + cellSize / 2,
+                player.y * cellSize + cellSize / 2,
+                cellSize * 0.40,
+                0, Math.PI * 2
+            );
             ctx.fill();
 
-            // Modifica per ingrandire l'uscita
-            const exitSize = cellSize * 1.4; // Aumenta la dimensione dell'uscita (ad esempio 1.5 volte la cella)
-            ctx.fillStyle = "green";
-            ctx.fillRect(exit.x * cellSize + (cellSize - exitSize) / 2, exit.y * cellSize + (cellSize - exitSize) / 2, exitSize, exitSize);
+            // sortie
+            ctx.fillStyle = "lime";
+            ctx.fillRect(
+                exit.x * cellSize + cellSize * 0.15,
+                exit.y * cellSize + cellSize * 0.15,
+                cellSize * 0.7,
+                cellSize * 0.7
+            );
         }
 
-        // Réinitialiser le jeu
-        function resetGame() {
+        //--------------------------------------------------------------
+        //                  INITIALISATION DU JEU
+        //--------------------------------------------------------------
+
+        function initGame() {
+
+            cellSize = Math.floor(canvas.width / 20);
+            cols = Math.floor(canvas.width / cellSize);
+            rows = Math.floor(canvas.height / cellSize);
+
+            grid = [];
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    grid.push(new Cell(x, y));
+                }
+            }
+
+            exit = { x: cols - 1, y: rows - 1 };
             player = { x: 0, y: 0 };
+
             generateMaze();
+            buildGraph();
             drawGrid();
         }
 
-        // Générer et afficher le labyrinthe
-        generateMaze();
-        const graph = buildGraph(grid, cols, rows);
-        drawGrid();
+        //--------------------------------------------------------------
+        //                       BOUTONS UI
+        //--------------------------------------------------------------
 
-        // Ajouter un événement pour démarrer le déplacement avec DFS
         document.getElementById("start").addEventListener("click", () => {
-            const startIndex = 0; // Position initiale (0,0)
-            const targetIndex = exit.y * cols + exit.x; // Position de la sortie
+            const startIndex = 0;
+            const targetIndex = index(exit.x, exit.y);
 
             const path = findPathDFS(graph, startIndex, targetIndex);
-            if (path) {
-                animatePath(path, cols, cellSize);
-            } else {
-                alert("Aucun chemin trouvé !");
-            }
-         //pour commence le jeux 
-         backgroundMusic.play();
+            if (path) animatePath(path);
+
+            backgroundMusic.play();
         });
 
-        // Réinitialiser le jeu
-        document.getElementById("Restart").addEventListener("click", resetGame);
+        document.getElementById("Restart").addEventListener("click", () => {
+            initGame();
+        });
+
+        //--------------------------------------------------------------
+        //           LANCEMENT INITIAL (responsive dès début)
+        //--------------------------------------------------------------
+
+        resizeCanvas();
+
     </script>
+
 </body>
 
 </html>
