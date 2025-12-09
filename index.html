@@ -4,25 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Labirinto 2D Responsive</title>
+    <title>Labirinto 2D </title>
 
     <style>
         body {
             margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
             background: black;
             color: white;
             font-family: Arial, sans-serif;
+            min-height: 100vh;
         }
 
         h1 {
+            margin-top: 10px;
             text-align: center;
+            font-size: 5vw;
+            max-font-size: 32px;
         }
 
+        /* CANVAS RESPONSIVE */
         canvas {
             border: 2px solid white;
             background: black;
@@ -32,45 +36,62 @@
             aspect-ratio: 3 / 2;
         }
 
+        /* ZONA COMANDI */
         #keyboard {
+            margin-top: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 15px;
+            width: 100%;
         }
 
         #keyboard .row {
             display: flex;
             justify-content: center;
+            width: 100%;
         }
 
         #keyboard button {
             margin: 8px;
-            padding: 15px 20px;
-            font-size: 20px;
+            padding: 12px 18px;
+            font-size: 5vw;
+            max-font-size: 26px;
             border-radius: 10px;
             cursor: pointer;
             border: none;
             background: white;
             color: black;
             font-weight: bold;
+            width: 20vw;
+            max-width: 90px;
         }
 
         #Restart {
             background: greenyellow;
+            width: auto !important;
+        }
+
+        /* BOTTONI RESPONSIVE PER MOBILE PIÙ PICCOLO */
+        @media (max-width: 480px) {
+            #keyboard button {
+                padding: 10px 14px;
+                font-size: 6vw;
+                width: 24vw;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Labirinto 2D - Responsive + Movimenti</h1>
+    <h1>Labirinto 2D</h1>
 
     <canvas id="grid"></canvas>
 
-    <!-- BOTTONI DI MOVIMENTO -->
+    <!-- COMANDI GIOCO -->
     <div id="keyboard">
-        <button id="Restart">Restart</button>
+
+        <button id="Restart">🔄 Restart</button>
 
         <div class="row">
             <button id="up">▲</button>
@@ -267,7 +288,7 @@
         });
 
         //------------------------------------------------------------
-        //         BOTTONI DI MOVIMENTO (MOBILE / TABLET)
+        //       BOTTONI DI MOVIMENTO (MOBILE / TABLET)
         //------------------------------------------------------------
 
         document.getElementById("up").onclick = () => movePlayer(0, -1, 0);
