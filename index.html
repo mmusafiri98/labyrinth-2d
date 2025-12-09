@@ -3,92 +3,80 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Labirinto 2D </title>
+    <meta-name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labirinto 2D Responsive</title>
 
     <style>
         body {
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             background: black;
             color: white;
             font-family: Arial, sans-serif;
-            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         h1 {
-            margin-top: 10px;
+            margin: 10px 0;
+            font-size: clamp(18px, 4vw, 28px);
             text-align: center;
-            font-size: 5vw;
-            max-font-size: 32px;
         }
 
-        /* CANVAS RESPONSIVE */
+        /* Canvas molto più grande e sempre visibile */
         canvas {
             border: 2px solid white;
             background: black;
             width: 95vw;
             height: auto;
-            max-width: 700px;
+            max-width: 750px;
             aspect-ratio: 3 / 2;
         }
 
-        /* ZONA COMANDI */
+        /* Controlli super compatti */
         #keyboard {
-            margin-top: 15px;
+            margin-top: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 100%;
-        }
-
-        #keyboard .row {
-            display: flex;
-            justify-content: center;
-            width: 100%;
+            gap: 5px;
         }
 
         #keyboard button {
-            margin: 8px;
-            padding: 12px 18px;
-            font-size: 5vw;
-            max-font-size: 26px;
-            border-radius: 10px;
-            cursor: pointer;
-            border: none;
+            padding: 6px;
+            font-size: clamp(12px, 4vw, 18px);
+            width: 14vw;
+            max-width: 60px;
+            height: 14vw;
+            max-height: 60px;
+            border-radius: 8px;
             background: white;
-            color: black;
+            border: none;
+            cursor: pointer;
             font-weight: bold;
-            width: 20vw;
-            max-width: 90px;
         }
 
         #Restart {
-            background: greenyellow;
             width: auto !important;
+            height: auto !important;
+            padding: 8px 14px !important;
+            background: greenyellow;
         }
 
-        /* BOTTONI RESPONSIVE PER MOBILE PIÙ PICCOLO */
-        @media (max-width: 480px) {
-            #keyboard button {
-                padding: 10px 14px;
-                font-size: 6vw;
-                width: 24vw;
-            }
+        .row {
+            display: flex;
+            gap: 8px;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Labirinto 2D</h1>
+    <h1>Labirinto 2D - Responsive</h1>
 
     <canvas id="grid"></canvas>
 
-    <!-- COMANDI GIOCO -->
     <div id="keyboard">
 
         <button id="Restart">🔄 Restart</button>
@@ -102,19 +90,20 @@
             <button id="down">▼</button>
             <button id="right">▶</button>
         </div>
+
     </div>
 
     <script>
 
         //------------------------------------------------------------
-        //          CANVAS RESPONSIVE
+        // CANVAS RESPONSIVE
         //------------------------------------------------------------
 
         const canvas = document.getElementById("grid");
         const ctx = canvas.getContext("2d");
 
         function resizeCanvas() {
-            const maxWidth = Math.min(window.innerWidth * 0.95, 700);
+            const maxWidth = Math.min(window.innerWidth * 0.95, 750);
             canvas.width = maxWidth;
             canvas.height = maxWidth * 0.67;
             initGame();
@@ -123,20 +112,17 @@
         window.addEventListener("resize", resizeCanvas);
 
         //------------------------------------------------------------
-        //               VARIABILI DEL GIOCO
+        // VARIABILI DI GIOCO
         //------------------------------------------------------------
 
-        let cellSize;
-        let cols;
-        let rows;
-
+        let cellSize, cols, rows;
         let grid = [];
         let stack = [];
         let player = { x: 0, y: 0 };
         let exit = { x: 0, y: 0 };
 
         //------------------------------------------------------------
-        //                   CLASSE CELLA
+        // CELLA
         //------------------------------------------------------------
 
         class Cell {
@@ -169,7 +155,7 @@
         }
 
         //------------------------------------------------------------
-        //           GENERAZIONE LABIRINTO
+        // GENERAZIONE LABIRINTO
         //------------------------------------------------------------
 
         function index(x, y) {
@@ -179,19 +165,17 @@
 
         function getUnvisitedNeighbor(cell) {
             const neighbors = [];
-            const options = [
+            const dirs = [
                 [0, -1, 0],
                 [1, 0, 1],
                 [0, 1, 2],
                 [-1, 0, 3]
             ];
 
-            for (const [dx, dy, wall] of options) {
-                const neighborIndex = index(cell.x + dx, cell.y + dy);
-                const neighbor = grid[neighborIndex];
-                if (neighbor && !neighbor.visited) {
-                    neighbors.push({ neighbor, wall });
-                }
+            for (const [dx, dy, w] of dirs) {
+                const nIdx = index(cell.x + dx, cell.y + dy);
+                const n = grid[nIdx];
+                if (n && !n.visited) neighbors.push({ neighbor: n, wall: w });
             }
 
             if (neighbors.length === 0) return null;
@@ -210,12 +194,12 @@
             stack.push(start);
 
             while (stack.length > 0) {
-                const current = stack[stack.length - 1];
-                const next = getUnvisitedNeighbor(current);
+                const cur = stack[stack.length - 1];
+                const next = getUnvisitedNeighbor(cur);
 
                 if (next) {
                     next.neighbor.visited = true;
-                    removeWalls(current, next.neighbor, next.wall);
+                    removeWalls(cur, next.neighbor, next.wall);
                     stack.push(next.neighbor);
                 } else {
                     stack.pop();
@@ -224,13 +208,13 @@
         }
 
         //------------------------------------------------------------
-        //                 DISEGNO GRIGLIA
+        // DISEGNO
         //------------------------------------------------------------
 
         function drawGrid() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            grid.forEach(cell => cell.draw());
+            grid.forEach(c => c.draw());
 
             // Player
             ctx.fillStyle = "cyan";
@@ -238,7 +222,7 @@
             ctx.arc(
                 player.x * cellSize + cellSize / 2,
                 player.y * cellSize + cellSize / 2,
-                cellSize * 0.4,
+                cellSize * 0.35,
                 0, Math.PI * 2
             );
             ctx.fill();
@@ -246,15 +230,15 @@
             // Exit
             ctx.fillStyle = "lime";
             ctx.fillRect(
-                exit.x * cellSize + cellSize * 0.15,
-                exit.y * cellSize + cellSize * 0.15,
-                cellSize * 0.7,
-                cellSize * 0.7
+                exit.x * cellSize + cellSize * 0.2,
+                exit.y * cellSize + cellSize * 0.2,
+                cellSize * 0.6,
+                cellSize * 0.6
             );
         }
 
         //------------------------------------------------------------
-        //               MOVIMENTO DEL GIOCATORE
+        // MOVIMENTO
         //------------------------------------------------------------
 
         function movePlayer(dx, dy, wallIndex) {
@@ -279,25 +263,22 @@
 
         // Tastiera
         document.addEventListener("keydown", (e) => {
-            const key = e.key.toLowerCase();
+            const k = e.key.toLowerCase();
 
-            if (key === "arrowup" || key === "w") movePlayer(0, -1, 0);
-            if (key === "arrowright" || key === "d") movePlayer(1, 0, 1);
-            if (key === "arrowdown" || key === "s") movePlayer(0, 1, 2);
-            if (key === "arrowleft" || key === "a") movePlayer(-1, 0, 3);
+            if (k === "arrowup" || k === "w") movePlayer(0, -1, 0);
+            if (k === "arrowright" || k === "d") movePlayer(1, 0, 1);
+            if (k === "arrowdown" || k === "s") movePlayer(0, 1, 2);
+            if (k === "arrowleft" || k === "a") movePlayer(-1, 0, 3);
         });
 
-        //------------------------------------------------------------
-        //       BOTTONI DI MOVIMENTO (MOBILE / TABLET)
-        //------------------------------------------------------------
-
+        // Botti mobile
         document.getElementById("up").onclick = () => movePlayer(0, -1, 0);
         document.getElementById("right").onclick = () => movePlayer(1, 0, 1);
         document.getElementById("down").onclick = () => movePlayer(0, 1, 2);
         document.getElementById("left").onclick = () => movePlayer(-1, 0, 3);
 
         //------------------------------------------------------------
-        //                INIZIALIZZAZIONE
+        // INIZIALIZZA TUTTO
         //------------------------------------------------------------
 
         function initGame() {
@@ -307,6 +288,7 @@
             rows = Math.floor(canvas.height / cellSize);
 
             grid = [];
+
             for (let y = 0; y < rows; y++) {
                 for (let x = 0; x < cols; x++) {
                     grid.push(new Cell(x, y));
@@ -320,7 +302,7 @@
             drawGrid();
         }
 
-        document.getElementById("Restart").addEventListener("click", initGame);
+        document.getElementById("Restart").onclick = initGame;
 
         resizeCanvas();
 
