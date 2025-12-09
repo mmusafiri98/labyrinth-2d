@@ -45,25 +45,36 @@
             flex-wrap: wrap;
         }
 
-        /* BOTTONI SUPER COMPATTI */
+        /* BOTTONI COMPATTI */
         #keyboard button {
             padding: 6px;
             font-size: clamp(10px, 3vw, 15px);
-            width: clamp(35px, 10vw, 45px);
-            height: clamp(35px, 10vw, 45px);
+            width: clamp(40px, 10vw, 55px);
+            height: clamp(40px, 10vw, 55px);
             background: white;
             border: none;
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
+            color: black;
         }
 
-        /* BOTTONE RESTART */
-        #Restart {
-            background: limegreen;
+        /* START e RESTART con testo sempre visibile */
+        #Start {
+            background: dodgerblue;
+            color: white;
             width: auto;
             height: auto;
-            padding: 6px 12px;
+            padding: 6px 15px;
+        }
+
+        #Restart {
+            background: limegreen;
+            color: black;
+            width: auto;
+            height: auto;
+            padding: 6px 15px;
+            border: 2px solid black;
         }
     </style>
 </head>
@@ -80,6 +91,7 @@
         <button id="Up">↑</button>
         <button id="Down">↓</button>
         <button id="Right">→</button>
+        <button id="Start">Start</button>
         <button id="Restart">Restart</button>
     </div>
 
@@ -92,11 +104,14 @@
         const canvas = document.getElementById("grid");
         const ctx = canvas.getContext("2d");
 
+        let gameStarted = false;
+
         function resizeCanvas() {
             const maxWidth = Math.min(window.innerWidth * 0.95, 700);
             canvas.width = maxWidth;
             canvas.height = maxWidth * 0.67;
-            initGame();
+
+            if (gameStarted) initGame();
         }
 
         window.addEventListener("resize", resizeCanvas);
@@ -122,7 +137,7 @@
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.walls = [true, true, true, true]; 
+                this.walls = [true, true, true, true];
                 this.visited = false;
             }
 
@@ -235,6 +250,8 @@
         //------------------------------------------------------------
 
         function movePlayer(dx, dy, wallIndex) {
+            if (!gameStarted) return;
+
             const i = index(player.x, player.y);
             const cell = grid[i];
 
@@ -255,6 +272,8 @@
         }
 
         document.addEventListener("keydown", (e) => {
+            if (!gameStarted) return;
+
             const key = e.key.toLowerCase();
 
             if (key === "arrowup" || key === "w") movePlayer(0, -1, 0);
@@ -271,6 +290,19 @@
         document.getElementById("Right").onclick = () => movePlayer(1, 0, 1);
         document.getElementById("Down").onclick = () => movePlayer(0, 1, 2);
         document.getElementById("Left").onclick = () => movePlayer(-1, 0, 3);
+
+        //------------------------------------------------------------
+        //                    START & RESTART
+        //------------------------------------------------------------
+
+        document.getElementById("Start").addEventListener("click", () => {
+            gameStarted = true;
+            initGame();
+        });
+
+        document.getElementById("Restart").addEventListener("click", () => {
+            if (gameStarted) initGame();
+        });
 
         //------------------------------------------------------------
         //                INIZIALIZZAZIONE
@@ -295,8 +327,6 @@
             generateMaze();
             drawGrid();
         }
-
-        document.getElementById("Restart").addEventListener("click", initGame);
 
         resizeCanvas();
 
